@@ -1,0 +1,127 @@
+---
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  html_notebook: null
+  word_document:
+    toc: yes
+---
+
+# 学生成绩分析实例
+
+***
+
+## 读入学生成绩
+```{r}
+#setwd("E:\\DataAnalysis")
+scores <- read.table("scores.txt", header=TRUE, row.names="num")
+head(scores)
+str(scores)    
+names(scores)  
+attach(scores)
+```
+
+## 给出数据的概略信息
+```{r}
+summary(scores)
+summary(scores$math)
+```
+
+## 选择某行，求一个学生总分
+```{r}
+child <- scores['239',]
+sum(child) 
+scores.class4 <- scores[class==4,]    # 挑出4班的
+```
+
+## 求每个班的平均数学成绩
+```{r}
+aver <- tapply(math, class, mean)
+aver
+```
+
+## 画条曲线看看每个班的数学平均成绩
+```{r}
+plot(aver, type='b', ylim=c(80,100), main="Average Of Math In Class", xlab="Class", ylab="Average Of Math")
+
+```
+
+## 生成数据的二维列联表
+```{r}
+table(math,class)
+
+```
+
+## 求4班每一科的平均成绩
+```{r}
+subjects <- c('chn','math','eng','phy','chem','politics','bio','history','geo','pe')
+sapply(scores[class==4, subjects], mean)
+
+```
+
+## 求各班各科的平均成绩
+```{r,warning=FALSE}
+aggregate(scores[subjects], by=list(class), mean)
+## aggregate
+```
+
+## 看看数学成绩的分布图
+```{r}
+hist(math)
+```
+
+默认是按频数形成的直方图，设置freq参数可以画密度分布图。
+```{r}
+hist(math, freq=FALSE)
+lines(density(math), col='blue')
+rug(jitter(math))
+#轴须图，在轴旁边出现一些小线段，jitter是加噪函数
+```
+
+## 核密度图
+```{r}
+plot(density(chn), col='blue', lwd=2)
+lines(density(math), col='red', lwd=2)
+
+```
+
+## 箱线图
+```{r}
+boxplot(math)
+boxplot.stats(math)
+#这个函数可以看到画出箱线图的具体的数据值
+```
+## 并列箱线图，看各班的数据分布情况 
+```{r,warning=FALSE}
+boxplot(math ~ class, data=scores)
+#Add Average
+lines(tapply(math,class,mean), col='blue', type='b')
+```
+可以看出2班没有拖后腿的，4班有6个拖后腿的
+
+## 看看各科成绩的相关性
+```{r}
+cor(scores[,subjects])
+```
+
+可以看出：数学和物理的相关性达88%，物理和化学成绩的相关性达86%。
+
+## 画个图出来看看
+```{r}
+pairs(scores[,subjects])
+
+```
+## 详细看看数学和物理的线性相关性
+```{r}
+cor_phy_math <- lm(phy ~ math, scores)
+plot(math, phy)
+abline(cor_phy_math)
+cor_phy_math
+
+```
+也就是说拟合公式为：phy = 0.5258 * math + 4.7374,为什么是0.52？因为数学最高分为120，物理最高分为70
+
+

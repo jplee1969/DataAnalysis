@@ -1,0 +1,121 @@
+---
+output:
+  html_document:
+    toc: yes
+  html_notebook:
+    toc: yes
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+# R语言的数据读写
+***
+
+## 使用键盘输入数据
+使用edit（）或fix（）函数会自动调用一个文本编辑器。
+```{r}
+#首先建立一个空的数据框，包含age、gender和weight三个变量
+mydata<-data.frame(age=numeric(0),gender=character(0),weight=numeric(0))
+#然后调用edit（）或fix（）函数来编辑和修改数据
+mydata<-edit(mydata)
+#fix(mydata)
+mydata
+```
+
+
+## 读取R语言包中的数据
+  R中包含许多内置数据集。由于R提供了这些数据集，你可以应用它们来进行试验，所以它们对学习和使用R很有帮助。
+  许多数据集都包含在名为datasets的R包中。该R包是R的基础包，它在R的搜索路径中，因此可以直接应用这些数据集。例如，可以调用内置数据集pressure：
+```{r}
+head(pressure)
+```
+
+  任何R包都可以选择包含数据集，来补充R包datasets中的数据。例如，MASS包中包含了许多有趣的数据集。使用带有package参数的data函数可以访问相应的R包中的数据集。MASS包中包含数据集Cars93，可通过以下方法来访问：
+  
+```{r}
+data(Cars93, package="MASS")
+head(Cars93)
+```
+
+## 读取数据文件
+  使用R语言的时候，如果是少量数据，不妨使用创建向量的语句c()或其他函数进行创建；但是对于大量数据，最好还是先通过其他更方便的软件创建数据文件，然后使用R读入这个文件。
+  .csv是非常好的数据文件格式，跨平台支持非常好。在Excel或者SPSS中创建的数据，只要存为csv格式，就可以使用几乎任何数据处理软件对这些数据进行处理了。使用通用格式在多人合作、不同版本兼容等常见行为中，优势十分明显。另外，之所以使用不同的数据处理软件，第一，可以取长补短。比如有些工作SPSS很复杂的，可以用R语言几行命令搞定。第二，可以进行软件间处理结果对照，发现问题。
+  R语言中读取外部文件的最基本函数是read.table()，还有用来读csv的read.csv()， .csv是非常好的数据文件格式，跨平台支持非常好。。
+  输入help（read.table）命令，就看到了关于数据输入函数的说明。对read.table,使用格式是这样的;
+  
+```{r eval=FALSE}
+read.table(file, header = FALSE, sep = "", quote = ""'",
+           dec = ".", row.names, col.names,
+           as.is = !stringsAsFactors,
+           na.strings = "NA", colClasses = NA, nrows = -1,
+           skip = 0, check.names = TRUE, fill = !blank.lines.skip,
+           strip.white = FALSE, blank.lines.skip = TRUE,
+           comment.char = "#",
+           allowEscapes = FALSE, flush = FALSE,
+           stringsAsFactors = default.stringsAsFactors(),
+           fileEncoding = "", encoding = "unknown", text)
+        参数很多，最常用的也就几个，重写如下：
+       read.table(file, header = FALSE, sep = "", quote = ""'",
+           dec = ".", skip = 0,
+           strip.white = FALSE, blank.lines.skip = TRUE,
+           comment.char = "#")
+```
+
+  file表示要读取的文件。file可以是①绝对路径或者相对路径，但是一定要注意，在R语言中"\"是转义符，所以路径分隔符必须写成"\\"，比如“C:\\myfile\\myfile.txt”。②可以使剪切板的内容。③使用file.choose()，弹出对话框，让你选择文件位置。强烈推荐使用第三种方法，免去了记忆和书写文件路径的麻烦，特别是能够避免因数据文件位置移动带来的错误！例如：read.table(file.choose(),...)。
+  header来确定数据文件中第一行是不是标题。默认F，即认为数据文件没有标题，也即认为第一行就开始是数据了！例如：
+        姓名 年龄收入
+        小六 12 350
+  如果header=F，读进来的第一行数据是“姓名年龄收入”，header=T，读进来的第一行是“小六 12 350”。
+  sep指定分隔符，默认是空格。quote是引号，默认就是双引号。dec是小数点的表示，默认就是一个点。skip是确定是否跳过某些行。strip.white确定是否消除空白字符。blank.lines.skip确定是否跳过空白行。comment.char指定用于表示注释的引导符号。
+
+  和read.table有所不同的，是read.csv的默认参数有别。注意看，header和sep的默认值。
+
+```{r eval=FALSE}
+read.csv(file, header = TRUE, sep = ",", quote=""", dec=".",
+         fill = TRUE, comment.char="")
+```
+  因为csv就是逗号分割的意思，当然sep必须是逗号。header也是默认有标题的。fill是默认填充的，即遇到行不相等的情况，空白域自动添加既定值。
+  
+  举个例子，我们有一个记录金庸和古龙武侠人物的文件，分别保存为制表符分隔的txt文件和逗号分隔的csv文件。
+  用read.table()读取TXT文件：
+```{r}
+wuxia <- read.table("wuxia.txt",header = T)
+wuxia
+```
+
+  用read.csv()读取csv文件：
+```{r}
+wuxia2 <- read.csv("wuxia.csv",header = T,sep = ",")
+wuxia2
+```
+
+## 读取Excel文件
+  可以将Excel文件另存为csv格式，然后用read.csv()读取。
+  或者安装xlsx包（需要安装Java虚拟机），使用read.xlsx2()直接读取。
+```{r}
+library(xlsx)
+wuxia3 <- read.xlsx2("wuxia.xlsx",sheetName="Sheet1")
+wuxia3
+```
+  使用openxlsx包不需要java的支持，函数也是read.xlsx()。
+```{r}
+library(openxlsx)
+wuxia4 <- read.xlsx("wuxia.xlsx",sheet = 1)
+wuxia4
+```
+  还可以将Excel内容复制到剪切板，然后使用read.table("clipboard",header=TRUE,……)来读取剪切板的内容；或者使用RODBC包读取ODBC连接的方式等。
+
+## 保存数据到文件
+使用write.table()、write.csv()等函数都可以，或者调用xlsx包保存到Excel文件中。
+```{r}
+mydata
+write.table(mydata,"mydata.txt",sep=",")
+library(xlsx)
+write.xlsx2(mydata,"mydata.xlsx")
+```
+

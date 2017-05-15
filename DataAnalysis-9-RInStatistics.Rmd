@@ -1,0 +1,226 @@
+---
+output:
+  html_notebook:
+    toc: yes
+  html_document:
+    toc: yes
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+# R语言统计基础
+***
+
+## 随机变量
+```{r}
+n <- sample(1:5,size = 100,replace = T,prob = c(0.1,0.1,0.3,0.3,0.2))
+table(n)
+table(n)/100
+
+```
+
+## 沪深300收益率数据
+```{r}
+HSRet300 <- read.csv("return300.csv",header = T)
+head(HSRet300)
+library(car)
+densityPlot(HSRet300$return)
+plot(ecdf(HSRet300$return))
+```
+
+## 二项分布随机数
+```{r}
+rbinom(20,100,0.5)  
+rbinom(3,10,0.5)  
+dbinom(20,100,0.5)
+dd <- dbinom(0:20,100,0.5)
+dd
+sum(dd)
+pbinom(20,100,0.5)
+```
+
+## 正态分布
+```{r}
+Norm<-rnorm(5)
+Norm
+dnorm(Norm)
+pnorm(Norm)
+HSRet300<-read.csv("return300.csv",header=T)
+m=mean(HSRet300$return)
+variance=var(HSRet300$return)
+m
+variance
+qnorm(p=0.05,mean=m,sd=sqrt(variance))
+```
+##因子
+```{r}
+y <- c("A","B","A","B","B","B","A","B","B","A")
+y
+(f <- factor(y))
+levels(f)
+```
+
+#探索性数据分析
+也成为描述性统计分析，是通过分析数据集以决定选择哪种方法适合统计推断的过程，例如是否服从正态分布等。
+
+##探索性数据分析的主要工具
+主要的图形表示工具如下： 
+
+* 条图（BarPlot）   
+* 直方图（Hist）    
+* 箱型图（BoxPlot）  
+* 正态概率图（Qqnorm）  
+例如：随机抽样24人的数学和统计课程成绩，存入文本文件mathstat.txt文件。
+```{r}
+MS=read.table("mathstat.txt",header = T)
+head(MS)
+dim(MS)
+```
+应用茎叶图对数学和统计成绩做初步认识：
+```{r}
+stem(MS$math)
+stem(MS$stat)
+```
+将常用图形函数整合到函数EDA中：
+```{r}
+EDA <- function (x)
+  { 
+    par(mfrow=c(2,2))              #four
+    hist(x)                        #hist 
+    dotchart(x)                    #dotchart
+    boxplot(x,horizontal=T)        #boxplot
+    qqnorm(x);qqline(x)            #qqnorm
+    par(mfrow=c(1,1))              #restore single
+  }
+```
+
+用上述函数分析数学和统计成绩：
+```{r}
+EDA(MS$math)
+EDA(MS$stat)
+```
+
+##单变量数据分析
+分类频数表（Table）：例如，关于是否抽烟的调查
+```{r}
+x <- c("yes","no","no","yes","yes","yes","no","no","yes")
+table(x)
+x
+```
+条图（barplot）：高度可以是频数或频率，应该先对数据分组。例如，对饮酒类型的调查，按红酒（1）、白酒（2）、黄酒（3）、啤酒（4）分成四类，调查数据如下：
+```{r}
+drink <- c(3,4,1,1,3,4,3,3,1,3,2,1,2,1,2,3,2,3,1,1,1,1,4,3,1)
+barplot(drink)
+barplot(table(drink))
+```
+第一个图其实没有意义。
+饼图（Pie）
+```{r}
+pie(table(drink))
+```
+将默认分类改成文字
+```{r}
+drink.count <- table(drink)
+names(drink.count) <- c("red","white","yellow","beer")
+pie(drink.count)
+```
+
+集中趋势和离散程度：均值、方差、分位数等。
+```{r}
+salary=c(2000,2100,2200,2300,2350,2450,2500 ,2700,2900,2850,3500,3800,2600,
+         3000,3300,3200,4000,3100,4200)
+mean(salary)
+median(salary)
+var(salary)
+sd(salary)
+fivenum(salary)
+summary(salary)
+```
+
+##双变量数据分析
+二维表：例如，调查关于学生是否抽烟与每天学习时间的问题。
+```{r}
+smoke=c("Y","N","N","Y","N","Y","Y","Y","N","Y")
+study=c("<5h","5-10h","5-10h",">10h",">10h","<5h","5-10h","<5h",">10h","5-10h")
+table(smoke,study)
+```
+计算比例：
+```{r}
+tab=table(smoke,study)
+prop.table(tab,1)
+prop.table(tab,2)
+prop.table(tab)
+```
+
+复式条图：
+```{r}
+par(mfrow=c(1,3))
+barplot(table(smoke,study))     
+barplot(table(study,smoke))     
+barplot(table(study,smoke),beside=T,legend.text=c("<5h","5-10h",">10"))
+par(mfrow=c(1,1))
+```
+
+散点图：例如，财政收入和税收数据按年统计的结果
+```{r}
+revenue <- read.table("revenue.txt",header = T)
+revenue
+plot(revenue$x,revenue$y)
+abline(lm(revenue$y~revenue$x))
+```
+
+相关系数：
+```{r}
+cor(revenue$x,revenue$y)
+cor(revenue$y,revenue$x)
+```
+
+##多变量数据分析
+多维列联表：以MASS包中的Cars93数据为例进行分析
+```{r}
+library(MASS)
+data(Cars93)
+dim(Cars93)
+attach(Cars93)
+names(Cars93)
+```
+一共27个变量，93行数据。
+把价格Price按照（0,12）、（12,20），（20，最大值）分成经济型、普通型、奢侈型；把MPGhighway分成费油型、普通型、省油型。用cut函数分组：
+```{r}
+price=cut(Price,c(0,12,20,max(Price)))    
+table(price)
+levels(price)=c("cheap","okay","expensive")
+table(price)
+mpg=cut(MPG.highway,c(0,20,30,max(MPG.highway)))
+table(mpg)
+levels(mpg)=c("gas guzzler","oky","miser")
+table(mpg)
+```
+作price和type的二维表以及price、type和mpg的三位表：
+```{r}
+table(Type)
+table(price,Type)
+table(price,mpg)
+table(price,Type,mpg)
+```
+复式条形图：
+```{r}
+par(mfrow=c(1,2))
+barplot(table(price,Type))
+barplot(table(price,Type),beside=T)
+
+barplot(table(Type,price))
+barplot(table(Type,price),beside=T)
+par(mfrow=c(1,1))
+```
+
+矩阵式散点图：考察三个或三个以上变量间关系时，绘制矩阵散点图可以快速发现多个变量间的主要相关性,以数据集iris（鸢尾花）为例。函数pairs（）
+```{r}
+pairs(iris)
+```
+

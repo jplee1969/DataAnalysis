@@ -1,0 +1,95 @@
+---
+title: "SongPoem"
+always_allow_html: yes
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  html_notebook:
+    toc: yes
+  html_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+# R语言分析宋词300首
+其实做法很简单，大概就是分这么几步：
+
+- 把文本拆分成一个一个的单词  
+- 把单词按照出现的频率、次数进行排序  
+- 用可视化把结果展示出来  
+
+## 导入文本库
+```{r}
+fileName <- "F:\\Code\\R\\Song\\songci300.txt"
+SC <- readChar(fileName, file.info(fileName)$size)
+substr(SC, 1000, 1100)
+```
+
+## 用分词包『结巴R』里面的 worker() 公式完成分词
+```{r}
+library(jiebaR)
+cc = worker()
+analysis <- as.data.frame(table(cc[SC]))
+names(analysis) <- c("word","freq")
+analysis <- analysis[order(-analysis$freq),]
+analysis$word <- as.character(analysis$word)
+head(analysis)
+```
+
+## 用R包wordcloud2把结果简单地进行了一下可视化
+```{r}
+library(wordcloud2)
+wordcloud2(analysis)
+```
+
+## 根据分词结果的字数（一字，二字，三字）重新进行了可视化，结果如下
+```{r}
+wordcloud2(analysis[analysis$freq>1& analysis$freq < 300 & nchar(analysis$word) == 1,])
+wordcloud2(analysis[analysis$freq>1& analysis$freq < 300 & nchar(analysis$word) == 2,])
+wordcloud2(analysis[analysis$freq>1 & analysis$freq < 300 & nchar(analysis$word) == 3,])
+```
+
+# 诗词创作
+## 分析准备
+```{r}
+cipai <- "画堂晨起，来报雪花坠。高卷帘栊 看 佳瑞，皓色远 迷 庭砌。盛气光引 炉烟，素草寒生玉佩。应是天仙狂醉，乱把白云揉碎。"
+tagger <- worker("tag")
+cipai_2 <- tagger <= cipai
+cipai_2
+```
+从之前提炼的宋词词频库中，选取了至少出现过 两次 的一字或两字词语，作为诗词创作的素材库；然后提取词性文件，将素材根据词性分类：
+```{r}
+example <- subset(analysis, freq >1 & nchar(word) <3 & freq < 300)
+cixing <- attributes(cipai_2)$names
+example_2 <- tagger <= example$word
+```
+
+## 开始创作
+从范本词牌的 第一个词 开始，随机在素材库中选取 词性相同，字数相等 的单词，填入提前设置好的空白字符串中。
+```{r}
+write_songci <- function(m){
+set.seed(m)
+empty <- ""
+for (i in 1:length(cipai_2)){
+  temp_file <- example_2[attributes(example_2)$name == cixing[i]]
+  temp_file <- temp_file[nchar(temp_file) == nchar(cipai_2[i])] 
+  empty <- paste0(empty, sample(temp_file,1))
+  }
+
+result <- paste0(substr(empty, 1,4), ",", substr(empty,5,9),".", 
+      substr(empty, 10,16), ",", substr(empty, 17,22),".",
+      substr(empty, 23,28), ",", substr(empty, 29,34),".",
+      substr(empty, 35,40), ",", substr(empty, 41,46),".")
+
+}
+```
+
+## 看看创作成果
+```{r}
+lapply(1:5, write_songci)
+```
+

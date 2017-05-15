@@ -1,0 +1,88 @@
+---
+title: "R Cluster DataAnalysis"
+output: html_notebook
+---
+
+# 聚类分析：对鸢尾花数据集进行简单分析和聚类
+## 第一步：对数据集进行初步统计分析
+检查数据的维度
+```{r}
+dim(iris)
+```
+
+显示数据集中的列名
+```{r}
+names(iris)
+```
+
+显示数据集的内部结构
+```{r}
+str(iris)
+```
+查看数据集的前五项数据情况
+```{r}
+iris[1:5,]
+```
+
+显示数据集中每个变量的分布情况
+```{r}
+summary(iris)
+```
+显示iris数据集列Species中各个值出现频次
+```{r}
+table(iris$Species)
+```
+
+根据列Species画出饼图
+```{r}
+pie(table(iris$Species))
+```
+
+算出列Sepal.Length和Petal.Length的相关系数， 从结果看这两个值是强相关。
+```{r}
+cor(iris$Sepal.Length, iris$Petal.Length)
+```
+
+画出列iris$Sepal.Length分布柱状图
+```{r}
+hist(iris$Sepal.Length)
+```
+画出列iris$Sepal.Length的密度函数图
+```{r}
+plot(density(iris$Sepal.Length))
+```
+
+画出列iris$Sepal.Length和iris$Sepal.Width的散点图 
+```{r}
+plot(iris$Sepal.Length, iris$Sepal.Width)
+```
+
+绘出矩阵各列的散布图
+```{r}
+pairs(iris)
+```
+
+## 第二步：使用knn包进行Kmean聚类分析
+将数据集进行备份，将列newiris$Species置为空，将此数据集作为测试数据集
+```{r}
+newiris <- iris
+newiris$Species <- NULL
+```
+
+在数据集newiris上运行Kmean聚类分析， 将聚类结果保存在kc中。在kmean函数中，将需要生成聚类数设置为3
+```{r}
+(kc <- kmeans(newiris, 3)) 
+```
+
+创建一个连续表,在三个聚类中分别统计各种花出现的次数
+```{r}
+table(iris$Species, kc$cluster)
+```
+
+根据最后的聚类结果画出散点图，数据为结果集中的列"Sepal.Length"和"Sepal.Width"，颜色为用1，2，3表示的缺省颜色。在图上标出每个聚类的中心点
+```{r}
+plot(newiris[c("Sepal.Length", "Sepal.Width")], col = kc$cluster)
+points(kc$centers[,c("Sepal.Length", "Sepal.Width")], col = 1:3, pch = 8, cex=2)
+```
+
+

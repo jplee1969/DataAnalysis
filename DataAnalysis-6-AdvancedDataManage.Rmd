@@ -1,0 +1,239 @@
+---
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  html_notebook:
+    toc: yes
+  html_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+# 高级数据管理
+接下来，我们将讲解如何自己编写函数来完成数据处理和分析任务。首先，我们将探索控制程序流程的多种方式，包括循环和条件执行语句。然后，我们将研究用户自编函数的结构，以及在编写完成后如何调用它们。最后，我们将了解数据的整合和概述方法，以及数据集的重塑和重构方法。
+
+
+##各种函数的讲解
+```{r}
+x <- c(1, 2, 3, 4, 5, 6, 7, 8)
+mean(x)
+sd(x)
+n <- length(x)
+meanx <- sum(x)/n
+css <- sum((x - meanx)**2)            
+sdx <- sqrt(css / (n-1))
+meanx
+sdx
+
+# Listing 5.2 - Generating pseudo-random numbers from 
+# a uniform distribution
+
+runif(5)
+runif(5)
+set.seed(1234)                                                     
+runif(5)
+set.seed(1234)                                                      
+runif(5)
+
+# Listing 5.3 - Generating data from a multivariate 
+# normal distribution
+
+library(MASS)
+options(digits=3)
+set.seed(1234)
+
+mean <- c(230.7, 146.7, 3.6)                                           
+sigma <- matrix( c(15360.8, 6721.2, -47.1,                              
+                    6721.2, 4700.9, -16.5,
+                     -47.1,  -16.5,   0.3), nrow=3, ncol=3)
+
+mydata <- mvrnorm(500, mean, sigma)                                     
+mydata <- as.data.frame(mydata)                                         
+names(mydata) <- c("y", "x1", "x2")                                       
+
+dim(mydata)                                                             
+head(mydata, n=10)   
+
+# Listing 5.4 - Applying functions to data objects
+
+a <- 5
+sqrt(a)
+b <- c(1.243, 5.654, 2.99)
+round(b)
+c <- matrix(runif(12), nrow=3)
+c
+log(c)
+mean(c)
+
+# Listing 5.5 - Applying a function to the rows 
+# (columns) of a matrix
+
+mydata <- matrix(rnorm(30), nrow=6)
+mydata
+apply(mydata, 1, mean)     
+apply(mydata, 2, mean) 
+apply(mydata, 2, mean, trim=.4)   
+```
+
+##一个实例
+一组学生参加了数学、科学和英语考试。为了给所有学生确定一个单一的成绩衡量指标，需要将这些科目的成绩组合起来。另外，你还想将前20%的学生评定为A，接下来20%的学生评定为B，依次类推。最后，你希望按字母顺序对学生排序。
+观察此数据集，马上可以发现一些明显的障碍。首先，三科考试的成绩是无法比较的。由于它们的均值和标准差相去甚远，所以对它们求平均值是没有意义的。你在组合这些考试成绩之前，必须将其变换为可比较的单元。其次，为了评定等级，你需要一种方法来确定某个学生在前述得分上百分比排名。再次，表示姓名的字段只有一个，这让排序任务复杂化了。为了正确地将其排序，需要将姓和名拆开。
+
+###准备数据
+```{r,warning=F}
+options(digits=2)
+
+Student <- c("John Davis", "Angela Williams", 
+    "Bullwinkle Moose", "David Jones", 
+    "Janice Markhammer", "Cheryl Cushing",
+    "Reuven Ytzrhak", "Greg Knox", "Joel England",
+    "Mary Rayburn")
+Math <- c(502, 600, 412, 358, 495, 512, 410, 625, 573, 522)
+Science <- c(95, 99, 80, 82, 75, 85, 80, 95, 89, 86)
+English <- c(25, 22, 18, 15, 20, 28, 15, 30, 27, 18)
+roster <- data.frame(Student, Math, Science, English,
+    stringsAsFactors=FALSE)
+#knitr::kable(roster)
+```
+
+###表格展示数据
+```{r echo=F,results="asis"}
+knitr::kable(roster)
+```
+
+
+###数据标准化
+由于数学、科学和英语考试的分值不同（均值和标准差相去甚远），在组合之前需
+要先让它们变得可以比较。一种方法是将变量进行标准化，这样每科考试的成绩就都是用单位标准差来表示，而不是以原始的尺度来表示了。这个过程可以使用scale() 函数来实现：
+```{r}
+z <- scale(roster[,2:4]) 
+z
+```
+
+```{r}
+score <- apply(z, 1, mean)
+roster <- cbind(roster, score)
+knitr::kable(roster)
+```
+
+然后，可以通过函数 mean() 来计算各行的均值以获得综合得分，并使用函数
+cbind() 将其添加到花名册中：
+
+###划分等级
+函数 quantile() 给出了学生综合得分的百分位数。可以看到，成绩为A的分界点为0.74，B的分界点为0.44，等等。
+```{r}
+y <- quantile(score, c(.8,.6,.4,.2)) 
+y
+```
+
+通过使用逻辑运算符，你可以将学生的百分位数排名重编码为一个新的类别型成绩
+变量。下面在数据框 roster 中创建了变量 grade :
+
+```{r}
+roster$grade[score >= y[1]] <- "A"                        
+roster$grade[score < y[1] & score >= y[2]] <- "B"
+roster$grade[score < y[2] & score >= y[3]] <- "C"
+roster$grade[score < y[3] & score >= y[4]] <- "D"
+roster$grade[score < y[4]] <- "F"
+knitr::kable(roster)
+```
+
+###按姓和名排序
+使用函数 strsplit() 以空格为界把学生姓名拆分为姓氏和名字。把
+strsplit() 应用到一个字符串组成的向量上会返回一个列表：
+```{r}
+name <- strsplit((roster$Student), " ")  
+name
+```
+
+使用函数 sapply() 提取列表中每个成分的第一个元素，放入一个储存名字
+的向量 Firstname ，并提取每个成分的第二个元素，放入一个储存姓氏的向量Lastname 。 "["是一个可以提取某个对象的一部分的函数——在这里它是用来提取列表 name 各成分中的第一个或第二个元素的。你将使用 cbind()把它们添加到花名册中。由于已经不再需要 student 变量，可以将其丢弃:
+
+```{r}
+lastname <- sapply(name, "[", 2)
+firstname <- sapply(name, "[", 1)
+roster <- cbind(firstname,lastname, roster[,-1])
+```
+
+最后，可以使用函数 order() 依姓氏和名字对数据集进行排序：
+```{r}
+roster <- roster[order(lastname,firstname),]
+knitr::kable(roster)
+```
+
+##控制流
+条件语句和循环语句
+
+###循环
+####1.for循环  
+```{r}
+for(i in 1:5)
+  print("Hello")
+```
+
+####2.while循环
+```{r}
+i <- 5
+while(i > 0){
+  print("Hello")
+  i <- i - 1
+}
+```
+
+###条件
+####1.if-else结构
+```{r}
+(x <- runif(1))
+if(x > 0.5){
+  print("yes")
+}else{
+  print("no")
+}
+```
+
+####2.ifelse结构
+```{r}
+(x <- runif(1))
+(result <- ifelse(x > 0.5, "yes", "no"))
+```
+
+####3.switch结构
+```{r}
+level <- c("poor","good","excelent")
+(i <- round(runif(1,1,3)))
+(result <- switch(level[i],
+                 poor = "you are poor",
+                 good = "yes,good",
+                 excelent = "very good"))
+```
+
+##用户自编函数
+R的最大优点之一就是用户可以自行添加函数。事实上，R中的许多函数都是由已有函数构成的。
+函数中的对象只在函数内部使用。返回对象的数据类型是任意的，从标量到列表皆可。让我们看一个示例。
+假设你想编写一个函数，用来计算数据对象的集中趋势和散布情况。此函数应当可以选择性地给出参数统计量（均值和标准差）和非参数统计量（中位数和绝对中位差）。结果应当以一个含名称列表的形式给出。另外，用户应当可以选择是否自动输出结果。除非另外指定，否则此函数的默认行为应当是计算参数统计量并且不输出结果。
+```{r}
+mystats <- function(x, parametric=TRUE, print=FALSE) {
+  if (parametric) {
+    center <- mean(x); spread <- sd(x) 
+  } else {
+    center <- median(x); spread <- mad(x) 
+  }
+  if (print & parametric) {
+    cat("Mean=", center, "\n", "SD=", spread, "\n")
+  } else if (print & !parametric) {
+    cat("Median=", center, "\n", "MAD=", spread, "\n")
+  }
+  result <- list(center=center, spread=spread)
+  return(result)
+}
+# trying it out
+set.seed(1234)
+x <- rnorm(500) 
+y <- mystats(x)
+y <- mystats(x, parametric=FALSE, print=TRUE)
+```
+

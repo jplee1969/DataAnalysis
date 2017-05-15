@@ -1,0 +1,38 @@
+---
+output: html_notebook
+---
+
+# 三维散点图
+## 安装scatterplot3d包
+
+```{r}
+library(scatterplot3d)
+set.seed(2015)
+x <- runif(100)
+y <- runif(100)
+z <- runif(100)
+grp <- as.factor(sample(1:3, 100, replace = T))
+dat <- data.frame(x, y, z, grp)
+head(dat)
+plot3d <- with(dat, scatterplot3d(x, y, z, color = as.numeric(grp), pch = 16))
+legend(plot3d$xyz.convert(0.5,0.7,0.5),pch=16,yjust=0,legend=levels(dat$grp), col = seq_along(levels(dat$grp)))
+```
+
+## 安装rgl包
+```{r}
+library(rgl)
+plot3d(x,y,z,col=grp,size=1,type="s")
+```
+
+
+```{r}
+x <- seq(-2,3,0.05)
+y <- seq(-1,7,0.05)
+f <- function(x,y)
+{
+  x^4-2*x^2*y-2*x*y+2*y^2+4.5*x-4*y+4
+}
+z <- outer(x,y,f)
+persp(x,y,z,theta=30,phi=30,expand=0.7,col="blue")
+```
+

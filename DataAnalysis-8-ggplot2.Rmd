@@ -1,0 +1,193 @@
+---
+output:
+  pdf_document:
+
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+    toc: yes
+  html_notebook:
+    toc: yes
+  html_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+# 利用ggplot2绘图
+***
+
+## 为什么使用ggplot2
+###ggplot2基本要素  
+
+* 数据（Data）和映射（Mapping） 
+* 几何对象（Geometric） 
+* 标尺（Scale） 
+* 统计变换（Statistics） 
+* 坐标系统（Coordinante） 
+* 图层（Layer） 
+* 分面（Facet） 
+* 主题（Theme） 
+
+这里将从这些基本要素对ggplot2进行介绍。
+
+## 数据（Data）和映射（Mapping)
+
+```{r}
+require(ggplot2)
+data(diamonds)
+set.seed(42)
+small <- diamonds[sample(nrow(diamonds), 1000), ]
+head(small)
+summary(small)
+```
+画图实际上是把数据中的变量映射到图形属性上。以克拉(carat)数为X轴变量，价格(price)为Y轴变量。
+```{r}
+p <- ggplot(data = small, mapping = aes(x = carat, y = price))
+p + geom_point()
+
+```
+上面这行代码把数据映射XY坐标轴上，需要告诉ggplot2，这些数据要映射成什么样的几何对象，这里以散点为例：
+
+如果想将切工（cut）映射到形状属性。只需要：
+```{r}
+p <- ggplot(data=small, mapping=aes(x=carat, y=price, shape=cut)) 
+p+geom_point()
+```
+再比如我想将钻石的颜色（color）映射颜色属性：
+```{r}
+p <- ggplot(data=small, mapping=aes(x=carat, y=price, shape=cut, colour=color))
+p+geom_point()
+```
+
+## 几何对象（Geometric）
+在上面的例子中，各种属性映射由ggplot函数执行，只需要加一个图层，使用geom_point()告诉ggplot要画散点，于是所有的属性都映射到散点上。
+geom_point()完成的就是几何对象的映射，ggplot2提供了各种几何对象映射，如geom_histogram用于直方图，geom_bar用于画柱状图，geom_boxplot用于画箱式图等等。
+不同的几何对象，要求的属性会有些不同，这些属性也可以在几何对象映射时提供，比如上一图，也可以用以下语法来画：
+```{r}
+p <- ggplot(small) 
+p+geom_point(aes(x=carat, y=price, shape=cut, colour=color))
+```
+
+### 直方图
+直方图最容易，提供一个x变量，画出数据的分布。
+```{r}
+ggplot(small)+geom_histogram(aes(x=price))
+```
+同样可以根据另外的变量给它填充颜色，比如按不同的切工：
+```{r}
+ggplot(small)+geom_histogram(aes(x=price, fill=cut), position="dodge")
+```
+### 柱状图
+柱状图非常适合于画分类变量。在这里以透明度（clarity）变量为例。按照不同透明度的钻石的数目画柱状图。
+```{r}
+ggplot(small)+geom_bar(aes(x=clarity))
+```
+柱状图两个要素，一个是分类变量，一个是数目，也就是柱子的高度。数目在这里不用提供，因为ggplot2会通过x变量计算各个分类的数目。
+当然你想提供也是可以的，通过stat参数，可以让geom_bar按指定高度画图，比如以下代码：
+```{r}
+ggplot()+geom_bar(aes(x=c(LETTERS[1:3]),y=1:3), stat="identity")
+```
+
+柱状图和直方图是很像的，直方图把连续型的数据按照一个个等长的分区（bin）来切分，然后计数，画柱状图。而柱状图是分类数据，按类别计数。我们可以用前面直方图的参数来画side-by-side的柱状图，填充颜色或者按比例画图，它们是高度一致的。
+柱状图是用来表示计数数据的，但在生物界却被经常拿来表示均值，加上误差来表示数据分布，这可以通常图层来实现。
+
+### 密度函数图
+说到直方图，就不得不说密度函数图，数据和映射和直方图是一样的，唯一不同的是几何对象，geom_histogram告诉ggplot要画直方图，而geom_density则说我们要画密度函数图，在我们熟悉前面语法的情况下，很容易画出：
+```{r}
+ggplot(small)+geom_density(aes(x=price, colour=cut))
+```
+```{r}
+ggplot(small)+geom_density(aes(x=price,fill=clarity))
+```
+colour参数指定的是曲线的颜色，而fill是往曲线下面填充颜色。
+
+### 箱式图
+数据量比较大的时候，用直方图和密度函数图是表示数据分布的好方法，而在数据量较少的时候，比如很多的生物实验，很多时候大家都是使用柱状图+errorbar的形式来表示，不过这种方法的信息量非常低，这种情况推荐使用boxplot。
+```{r}
+ggplot(small)+geom_boxplot(aes(x=cut, y=price,fill=color))
+```
+geom_boxplot将数据映射到箱式图上，上面的代码，我们应该很熟悉了，按切工(cut)分类，对价格(price)变量画箱式图，再分开按照color变量填充颜色。
+ggplot2提供了很多的geom_xxx函数，可以满足我们对各种图形绘制的需求。
+geom_abline 	geom_area 	
+geom_bar 		geom_bin2d
+geom_blank 		geom_boxplot 	
+geom_contour 	geom_crossbar
+geom_density 	geom_density2d 	
+geom_dotplot 	geom_errorbar
+geom_errorbarh 	geom_freqpoly 	
+geom_hex 		geom_histogram
+geom_hline 		geom_jitter 	
+geom_line 		geom_linerange
+geom_map 		geom_path 	
+geom_point 		geom_pointrange
+geom_polygon 	geom_quantile 	
+geom_raster 	geom_rect
+geom_ribbon 	geom_rug 	
+geom_segment 	geom_smooth
+geom_step 		geom_text 	
+geom_tile 		geom_violin
+geom_vline
+
+### 标尺（Scale）
+前面我们已经看到了，画图就是在做映射，不管是映射到不同的几何对象上，还是映射各种图形属性。这一小节介绍标尺，在对图形属性进行映射之后，使用标尺可以控制这些属性的显示方式，比如坐标刻度，可能通过标尺，将坐标进行对数变换；比如颜色属性，也可以通过标尺，进行改变。
+```{r}
+ggplot(small)+geom_point(aes(x=carat, y=price, shape=cut, colour=color))+scale_y_log10()+scale_colour_manual(values=rainbow(7))
+```
+以数据（Data）和映射（Mapping)一节中所画散点图为例，将Y轴坐标进行log10变换，再自己定义颜色为彩虹色。
+
+### 统计变换（Statistics）
+统计变换对原始数据进行某种计算，然后在图上表示出来，例如对散点图上加一条回归线。
+```{r}
+ggplot(small, aes(x=carat, y=price))+geom_point()+scale_y_log10()+stat_smooth()
+```
+这里，aes所提供的参数，就通过ggplot提供，而不是提供给geom_point，因为ggplot里的参数，相当于全局变量，geom_point()和stat_smooth()都知道x,y的映射，如果只提供给geom_point()，则相当于是局部变量，geom_point知道这种映射，而stat_smooth不知道，当然你再给stat_smooth也提供x,y的映射，不过共用的映射，还是提供给ggplot好。
+ggplot2提供了多种统计变换方式：
+stat_abline       stat_contour      stat_identity     stat_summary
+stat_bin          stat_density      stat_qq           stat_summary2d
+stat_bin2d        stat_density2d    stat_quantile     stat_summary_hex
+stat_bindot       stat_ecdf         stat_smooth       stat_unique
+stat_binhex       stat_function     stat_spoke        stat_vline
+stat_boxplot      stat_hline        stat_sum          stat_ydensity
+统计变换是非常重要的功能，我们可以自己写函数，基于原始数据做某种计算，并在图上表现出来，也可以通过它改变geom_xxx函数画图的默认统计参数。
+
+### 坐标系统（Coordinante）
+坐标系统控制坐标轴，可以进行变换，例如XY轴翻转，笛卡尔坐标和极坐标转换，以满足我们的各种需求。
+坐标轴翻转由coord_flip()实现
+```{r}
+ggplot(small)+geom_bar(aes(x=cut, fill=cut))+coord_flip()
+```
+而转换成极坐标可以由coord_polar()实现：
+```{r}
+ggplot(small)+geom_bar(aes(x=factor(1), fill=cut))+coord_polar(theta="y")
+```
+这也是为什么之前介绍常用图形画法时没有提及饼图的原因，饼图实际上就是柱状图，只不过是使用极坐标而已，柱状图的高度，对应于饼图的弧度，饼图并不推荐，因为人类的眼睛比较弧度的能力比不上比较高度（柱状图）
+
+### 图层（Layer）
+photoshop流行的原因在于PS 3.0时引入图层的概念，ggplot的牛B之处在于使用+号来叠加图层，这堪称是泛型编程的典范。
+在前面散点图上，我们已经见识过，加上了一个回归线拟合的图层。
+有了图层的概念，使用ggplot画起图来，就更加得心应手。
+做为图层的一个很好的例子是蝙蝠侠logo，batman logo由6个函数组成，在下面的例子中，我先画第一个函数，之后再加一个图层画第二个函数，不断重复这一过程，直到六个函数全部画好。
+```{r}
+require(ggplot2)
+p <- ggplot(small, aes(carat, price))
+p + geom_point() + geom_smooth()
+```
+
+### 分面（Facet）
+分面可以让我们按照某种给定的条件，对数据进行分组，然后分别画图。
+在统计变换一节中，提到如果按切工分组作回归线，显然图会很乱，有了分面功能，我们可以分别作图。
+```{r}
+ggplot(small, aes(x=carat, y=price))+geom_point(aes(colour=cut))+scale_y_log10() +facet_wrap(~cut)+stat_smooth()
+```
+
+### 二维密度图
+为了作图方便，我们使用diamonds数据集的一个子集，如果使用全集，数据量太大，画出来散点就糊了，这种情况可以使用二维密度力来呈现。
+```{r}
+ggplot(diamonds, aes(carat, price))+ stat_density2d(aes(fill = ..level..), geom="polygon")+ scale_fill_continuous(high='darkred',low='darkgreen')
+```
+
+### ggplot2实战
+
+
+
